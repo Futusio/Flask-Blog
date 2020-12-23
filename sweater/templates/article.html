@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+
+{% block title %} Article {% endblock %}
+
+
+{% block header %}
+    {% if article.owner == current_user %}
+    <script>
+        function delArticle(){
+          $('#MyDialog').modal('show')
+        }
+
+    </script>
+        <header>
+        <!-- JS Magic -->
+        <form>
+        <div class='my_login nav navbar-dark bg-dark' style="display: block; position: fixed; top: 0;width: 100%; z-index: 100;">
+            <a class='my_close navbar-brand btn btn-second ml-2'>▽</a>
+            {% if current_user.is_authenticated %}
+            <div class="mr-5" style="float:right;">
+            <ul class="nav">
+                <li class="nav-item">
+                <a class="nav-link text-light" href="/article/change/{{ article.id }}">Change post</a>
+                </li>
+                <li class="nav-item">
+                <a class="nav-link text-light" onclick="delArticle()">Delete post</a>
+                </li>
+                <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">{{ current_user.login }}</a>
+                <div class="dropdown-menu">
+                    <a class="dropdown-item" href="#">Settings</a>
+                    <a class="dropdown-item" href="#">Avatars</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" onclick="logout()">Logout</a>
+                </div>
+                </li>
+            </ul>
+            </div>
+            {% endif %}
+        </div>
+        </form>
+    
+    
+        <div class="my_blank navbar-light bg-light" style="display: block;">
+            <a class='my_open navbar-brand btn btn-light ml-2'>▷</a>
+        </div>
+        <!-- Bootstrap -->
+        </header>
+        <div class="modal fade" id="MyDialog" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLongTitle">Подождите</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p>Вы уверены, что хотите удалить статью?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+                    <a type="button" class="btn btn-primary" href="/article/delete/{{ article.id }}">Удалить</a>
+                </div>
+                </div>
+            </div>
+        </div>
+        
+
+    {% endif %}
+{% endblock %}
+
+
+{% block body %}
+<script>
+
+
+    function successDel(id){
+        $(`#comment_${id}`).remove()
+        $('#questionDialog').modal('hide')
+        $.ajax({
+            method:'POST',
+            data:{'comment':id},
+            url:'/comment/delete',
+            success: function (response){
+                var json = jQuery.parseJSON(response)
+                if (json['status'] == 'success'){
+                    $('#statusDialog').modal('show')
+                    $('#statusModalLongTitle').html("Успешно")
+                    $('#statusBody').html("Ваш комментарий удален!")
+                } else {
+                    $('#statusDialog').modal('show')
+                    $('#statusModalLongTitle').html("Ошибка")
+                    $('#statusBody').html("Неизвестная ошибка. Попробуйте позже")
+                }
+
+            },
+            error: function (e) {
+                console.log("Error: ", e)
+            }
+        })
+    }
+
+    function delComment(id) {
+        $('#questionDialog').modal('show')
+        $('#questionBody').html("Вы уверены, что хотите удалить комментарий?")
+        $('#questionLink').html(`<a onclick="successDel(${id})">Удалить</a>`)
+
+    }
+
+    function changeComment(id) {
+        console.log("Comment id is ", id)
+        var pText = $(`#comment_text_${id}`).text()
+        // ЗАменяем <p> на <textarea>
+        $(`#comment_body_${id}`).html(`
+                <textarea type="text" rows='2' class="form-control text_area"  autocomplete="off"
+                    aria-label="Recipient's username" 
+                    aria-describedby="basic-addon2" id='changeCom' name="changeCom"
+                    style="border: none; white-space: nowrap; overflow: hidden; outline: none;">${pText}</textarea>
+                    `)
+        // Заменяем ссылки на "Изенить" 
+        $(`#ownerLinks_${id}`).html(`
+            <a class="text-right" onclick="commitComment(${id})" style="display: inline-block; float:right; margin-right: 1%;"><small>Сохранить</small></a>
+        `)
+    }
+
+    function commitComment(id){
+        // Вставляем новый текст комментария
+        var newText = $('#changeCom').val()
+        console.log(newText)
+        $(`#comment_body_${id}`).html(`<p id="comment_text_${id}">${newText}</p>`)
+        // Возвращаем ссылки назад
+        $(`#ownerLinks_${id}`).html(`
+            <a class="text-right" onclick="delComment('${id}')"><small>Удалить</small></a>
+            <a class="text-right" onclick="changeComment('${id}')"><small>Изменить</small></a>
+        `)
+        $.ajax({
+            method:'POST',
+            data:{'id':id, 'text':newText},
+            url:'/comment/change',
+            success: function (response){
+                var json = jQuery.parseJSON(response)
+                if(json['status'] == 'success'){
+                    console.log("Success")
+                } else {
+                    console.log("Error")
+                }
+            },
+            error: function (e){
+                console.log('Error is ', e)
+            }
+        })
+    }
+
+    function addComment() {
+        $.ajax({
+            type:'POST', 
+            url: '/article/{{ article.id }}',
+            data:$('form').serialize(),
+            success: function (response) {
+                $('#text').val('')
+                var json = jQuery.parseJSON(response)
+                // $('.comments').prepend(
+                //         `<div class="comment border rounded my-3 p-1">
+                //             <p class="text-secondary">${json.owner}</p>
+                //             <p>${json.text}</p>
+                //             <p><small>${json.date}</small></p>
+                //         </div>`
+                // )
+
+                $('.comments').prepend(`
+                <div class="comment border rounded px-2 my-3 p-1" id="comment_${json.id}">
+                    <div>
+                        <a class="text-secondary m-1" href='/blog/${json.owner}' style="display: inline-block;">${json.owner}</a>
+                        <div style="display: inline-block; float: right;" id='ownerLinks_${json.id}'>
+                        <!-- style="display: inline-block; float:right; margin-right: 1%;" -->
+                            <a class="text-right" onclick="delComment('${json.id}')"><small>Удалить</small></a>
+                            <a class="text-right" onclick="changeComment('${json.id}')"><small>Изменить</small></a>
+                        </div>
+                    </div>
+                    <div id="comment_body_${json.id}">
+                        <p id="comment_text_${json.id}">${json.text}</p>
+                    </div>
+                    <p class="text-right"><small>${json.date}</small></p>
+                </div>
+                `)
+
+                $('#statusDialog').modal('show')
+                $('#statusModalLongTitle').html("Успешно")
+                $('#statusBody').html("Ваш комментарий добавлен!")
+            },
+            error: function (error) {
+                console.log(`Error is ${error.responseText}`)
+                $('#statusDialog').modal('show')
+                $('#statusModalLongTitle').html("Ошибка")
+                $('#statusBody').html("Неизвестная ошибка. Попробуйте позже")
+            },
+        })
+    }
+</script>
+
+
+<div class="container mt-5">
+    <!-- Header -->
+    <div class="header">
+        <div class="border-secondary border-bottom" style="display: block; width: 100%;">
+            <h3>{{ article.title }}</h3>
+        </div>
+            <p style="float: left;">{{ article.owner.login }}</p>
+            <p style="float: right;"><small>{{ article.date }}</small></p>
+    </div>
+    <br>   
+    <!-- Article -->
+    <div class="body mt-3 pb-3 border-secondary border-bottom">
+        {{ article.text }}
+        <br>
+        <br>
+        {% if article.tags|length != 0 %}
+          {% for tag in article.tags %}
+            <span class="badge badge-pill badge-dark">{{ tag.name }}</span>
+          {% endfor %}
+      {% endif %}
+    </div>
+    <!-- Comments -->
+    <div class="comment_block my-3">
+        <h4>Comments:</h4>
+        {% if current_user.is_authenticated %}
+        <form method='POST' name='form'>
+            <div class="input-group">
+                <!-- Сделать textarea, когда разберусь как ее расшиярть -->
+                <textarea type="text" rows='2' class="form-control text_area"  autocomplete="off"
+                    placeholder="Your comment" aria-label="Recipient's username" 
+                    aria-describedby="basic-addon2" id='text' name="text"
+                    style=" white-space: nowrap; overflow: hidden;  "></textarea>
+                <div class="input-group-append">
+                  <a class="btn btn-outline-secondary" type="button" onclick="addComment()">Send</a>
+                </div>
+              </div>
+        </form>
+        {% endif %}
+        <div class="comments">
+            {% for comment in article.comments|reverse  %}
+            <div class="comment border rounded px-2 my-3 p-1" id="comment_{{ comment.id }}">
+                <div>
+                    <a class="text-secondary m-1" href='/blog/{{ comment.owner.login }}' style="display: inline-block;">{{ comment.owner.login }}</a>
+                    {% if current_user.login == comment.owner.login %}
+                    <div style="display: inline-block; float: right;" id='ownerLinks_{{ comment.id }}'>
+                    <!-- style="display: inline-block; float:right; margin-right: 1%;" -->
+                        <a class="text-right" onclick="delComment('{{ comment.id }}')"><small>Удалить</small></a>
+                        <a class="text-right" onclick="changeComment('{{ comment.id }}')"><small>Изменить</small></a>
+                    </div>
+                    {% endif %}
+                </div>
+                <div id="comment_body_{{ comment.id }}">
+                    <p id="comment_text_{{ comment.id }}">{{ comment.text }}</p>
+                </div>
+                <p class="text-right"><small>{{ comment.date }}</small></p>
+            </div>
+            {% endfor %}
+        </div>  
+    </div>
+</div>
+
+<!-- Modal windows  -->
+
+<div class="modal fade" id="questionDialog" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="questionModalLongTitle">Подождите</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body" id="questionBody">
+          <p></p>
+      </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+          <a type="button" class="btn btn-primary" id='questionLink'></a>
+        </div>
+      </div>
+    </div>
+</div> 
+
+<div class="modal fade" id="statusDialog" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="statusModalLongTitle"></h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body" id='statusBody'>
+          <p></p>
+      </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" data-dismiss="modal">Ok</button>
+        </div>
+      </div>
+    </div>
+</div> 
+
+
+<script src="{{ url_for('static', filename='js/actions.js') }}"></script>    
+{% endblock %}

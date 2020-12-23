@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}
+state
+{% endblock %}
+
+{% block body %}    
+
+<script>
+    var artId
+    var isCreate = true
+    var tags = []
+    var isValid = false
+    // Расширение textarea
+    $(document).on('input', '#textarea', function(e) {
+        this.style.height = '1px';
+        this.style.height = (this.scrollHeight + 6) + 'px'; 
+    });
+
+    // Удаление tag по нажатию 
+    function deleteTag(tag){
+        console.log(`The tag ${tag} will deleted`)
+        tags.splice(tags.indexOf(`${tag}`), 1)
+        document.getElementById(`tag_${tag}`).remove();
+        if (tags.length == 0){
+            $('#tag_help').html('')
+        }
+    }
+
+    $(document).on('blur focusout', '#title', function(e) {
+        if ($("#title").val().length < 8 || $("#title").val().length > 64) {
+            $('#MyDialog').modal('show')
+            $('#exampleModalLongTitle').html("Ошибка!")
+            $('.modal-body').html("Длина заголовка должна быть от 8 до 64 символов")
+            $('#title_help').html('Введите название статьи')
+            $('#title').val('')
+            this.blur()
+        } else {
+            $('#title_help').html('')
+        }
+    })
+
+    // Обработчик tags input
+    $(document).on('keypress blur focusout','#tags', function(e) {
+        if (e.type == "keypress") {
+            if (e.keyCode == 32){
+                var text = document.getElementById('tags').value.toLowerCase()
+                if (jQuery.inArray(text, tags) != -1) {
+                    $('#MyDialog').modal('show')
+                    $('#exampleModalLongTitle').html("Ошибка!")
+                    $('.modal-body').html("Этот тег уже указан")
+                }
+                else if(tags.length >= 5) {
+                    $('#MyDialog').modal('show')
+                    $('#exampleModalLongTitle').html("Ошибка!")
+                    $('.modal-body').html("Максимум 5 тегов")
+                }
+                else if(text.indexOf('#') != 0) {
+                    $('#MyDialog').modal('show')
+                    $('#exampleModalLongTitle').html("Ошибка!")
+                    $('.modal-body').html("Тэг должен начинаться с #")
+                }
+                else if(text.length < 4){
+                    $('#MyDialog').modal('show')
+                    $('#exampleModalLongTitle').html("Ошибка!")
+                    $('.modal-body').html("Минимальная длина 3 символа")
+                }
+                else if(text.length > 11){
+                    $('#MyDialog').modal('show')
+                    $('#exampleModalLongTitle').html("Ошибка!")
+                    $('.modal-body').html("Максимальная длина 10 символов")
+                }
+                else {
+                    $('.badges').append(
+                        `<a href="#" 
+                        onclick="deleteTag('${text}')" 
+                        id="tag_${text}" 
+                        name="tag" 
+                        class="mx-1 badge badge-pill badge-dark">${text}</a>`)
+                    tags.push(text)
+                    $('#tag_help').html('To remove the tag click at it')
+                }
+                $('#tags').val('')
+                this.blur()
+            }
+        }
+    })
+
+    $(document).on('focus', '#tags', function() {
+        $('#tags').val('#')
+    })
+
+    function change() {
+        if ($('#title').val().length != 0 && $('#textarea').val().length != 0){
+            send_new()
+        }
+        else{
+            $('#MyDialog').modal('show')
+            $('#exampleModalLongTitle').html("Ошибка!")
+            $('.modal-body').html("Введите текст и заголовок статьи")
+        }
+    }
+
+    function send_new(){
+        $.ajax({
+            type:'POST',
+            url:'/article/change/{{ article.id }}',
+            data: {title: $('#title').val(), text:$('#textarea').val(), tags:JSON.stringify(tags)},
+            success: function (response) {
+                $('#MyDialog').modal('show')
+                    var json = jQuery.parseJSON(response)
+                    if (json.status === 'success') {
+                        isValid = true
+                        artId = json.artId
+                        $('#exampleModalLongTitle').html("Успешно!")
+                        $('.modal-body').html("Статья была изменена!")
+                    } else {
+                        $('#exampleModalLongTitle').html("Ошибка!")
+                        $('.modal-body').html(`${json.msg}`)
+                    }
+            },
+            error: function(e) {
+                console.log('Error: ', e)
+            }
+        })
+    }
+
+    function create() {
+        if ($('#title').val().length != 0 && $('#textarea').val().length != 0){
+            send()
+        }
+        else{
+            $('#MyDialog').modal('show')
+            $('#exampleModalLongTitle').html("Ошибка!")
+            $('.modal-body').html("Введите текст и заголовок статьи")
+        }
+    }
+
+    function send() {
+            $.ajax({
+                type:'POST',
+                url:'/article',
+                data: {title: $('#title').val(), text:$('#textarea').val(), tags:JSON.stringify(tags)},
+                success: function (response) {
+                    $('#MyDialog').modal('show')
+                    var json = jQuery.parseJSON(response)
+                    if (json.status === 'success') {
+                        isValid = true
+                        artId = json.artId
+                        $('#exampleModalLongTitle').html("Успешно!")
+                        $('.modal-body').html("Новая статья была создана!")
+                    } else {
+                        $('#exampleModalLongTitle').html("Ошибка!")
+                        $('.modal-body').html(`${json.msg}`)
+                    }
+                },
+                error: function (error) {
+                    console.log(`Error is ${error}`)
+                }
+            });
+        }
+    
+    $(document).on('hidden.bs.modal', '#MyDialog', function() {
+        if(isValid){
+            window.location.href = `/article/${artId}`
+        }
+    })
+
+    function pushTag() {
+        {% for tag in article.tags %}
+            tags.push('{{ tag.name }}')
+        {% endfor %}
+        console.log(tags)
+    }
+
+    document.addEventListener("DOMContentLoaded", pushTag);
+</script>
+
+
+<div class="container mt-5">
+    <form method="POST">
+        <div class="header border-secondary border-bottom">
+            <div>
+                <h3><input placeholder="Title" value="{{ article.title }}" id="title" name="title" style="width: 100%; outline: none; border: none;"></h3>
+                <p class="help-block"><small id='title_help'>Enter a title name</small></p>
+                <p style="float: left;">{{ current_user.login }}</p>
+                {% if article %}
+                    <p style="float: right;"><small>{{ article.date.date() }}</small></p>
+                {% endif %}
+            </div>
+        </div>
+        <br>   
+        <!-- Article -->
+        <div class="body mt-3 pb-1 border-secondary border-bottom" style="height: 100%;">
+            <textarea id="textarea" name="text" rows='15' placeholder="Enter a text" style="width: 100%;border:none;resize: none; outline: none; height: 100%;">{{ article.text }}</textarea>
+            <div class='badges' name='all_tags'>
+                {% for tag in article.tags %}
+                <a href="#" 
+                    onclick="deleteTag('{{ tag.name }}')" 
+                    id="tag_{{ tag.name }}" 
+                    name="tag" 
+                    class="mx-1 badge badge-pill badge-dark">{{ tag.name }}</a>
+                {% endfor %}
+            </div> 
+            <p class="help-block"><small id='tag_help'></small></p>
+            <p><input id='tags' name="tags" placeholder="#tags" style="width: 100%; outline: none; border: none; display: block; margin-left: 0%; margin-right: 0;"></p>
+            <p class="help-block"><small id='conf_help'>From 3 to 10 symbols</small></p>
+        </div>
+        <!-- Button -->
+        {% if article %}
+            <a class="btn btn-outline-primary my-3" onclick="change()" style="width: 100%">Изменить</a>
+        {% else %}
+            <a class="btn btn-outline-primary my-3" onclick="create()" style="width: 100%">Создать</a>
+        {% endif %}
+    </form>
+</div>
+
+    <!-- Modal Window -->
+    <div class="modal fade" id="MyDialog" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLongTitle"></h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <p></p>
+          </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary" data-dismiss="modal">Ok</button>
+            </div>
+          </div>
+        </div>
+    </div>
+
+{% endblock %}

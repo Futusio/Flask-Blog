@@ -1,0 +1,39 @@
+/* .header{
+    display: block;
+    height:200px;
+    width: 100%;
+    background-color: green;
+  }
+   */
+  /* .my_button {
+    background-color: red;
+  } */
+  
+  /* .button {
+      margin: 5px;
+  }
+  
+  .blank {
+      height: 30px;
+      background-color: green;
+  } */
+  
+  /* .my_login{
+    display: block;
+    height:30px;
+    width: 100%;
+    background-color: red;
+  } */
+
+  /* .my_top {
+    height: 50px;
+} */
+
+.my_menu li {
+    display: inline-block;
+    vertical-align: top;
+}
+
+.test_body {
+  background-color: black;
+}

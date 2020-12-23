@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+
+{% block title %}
+Sign in
+{% endblock %}
+
+
+{% block body %}
+    <script>
+        var isValid = false
+        $(document).on('keypress','#username', function() {
+        var that = this;
+          setTimeout(function() {
+              var res = /[^a-zA-Z]/g.exec(that.value);
+              console.log(res);
+              that.value = that.value.replace(res, '');
+          }, 0);
+      });
+
+        function validate() {
+            $.ajax({
+                type:'POST',
+                url:'/login',
+                data:$('form').serialize(),
+                success: function (response) {
+                    $('#MyDialog').modal('show')
+                    var json = jQuery.parseJSON(response)
+                    if (json.status === 'success'){
+                        isValid = true
+                        $('#exampleModalLongTitle').html("Успешно!")
+                        $('.modal-body').html("Аутентификация пройдена успешно!")
+                    } else {    
+                        $('#exampleModalLongTitle').html("Ошибка!")
+                        $('.modal-body').html(json.message)
+                    }
+
+                    
+                },
+                error: function (error) {
+                    console.log(`Error is ${error}`)
+                }
+            });
+        }
+
+        $(document).on('hidden.bs.modal', '#MyDialog', function() {
+            if(isValid){
+                window.location.href = '/'
+            }
+        })
+    </script>
+
+
+    <div class='container p-3 mt-5 border w-25'>
+        <form name='form' class="form-horizontal" method="POST">
+        <fieldset>
+            <div class="control-group" style="margin:0% 10% 0% 10%;" >
+            <!-- Username -->
+            <label class="control-label"  for="username">Логин:</label>
+            <div class="controls">  
+                <input type="text" autocomplete="off" id="username" name="login"  style="width: 100%">
+            </div>
+            </div>
+
+            <div class="control-group" style="margin:5% 10% 8% 10%;" >
+                <!-- Username -->
+                <label class="control-label"  for="password">Пароль:</label>
+                <div class="controls">  
+                    <input type="password" autocomplete="off" id="password" name="password" style="width: 100%">
+                </div>
+            </div>
+
+            <div class="control-group" style="margin:0% 10% 10% 10%;">
+                <!-- Button -->
+                <div class="controls">
+                  <a class="btn btn-primary" onclick="validate()" style="width: 100%">Войти</a>
+                  <div>
+                    <a class="primary" style="float:left"><small>Восстановление</small></a>
+                    <a class="primary" style="float: right;" href='/registration'><small>Регистрация</small></a>
+                </div>
+                </div>
+            </div>
+        </fieldset>
+        </form>
+    </div>
+
+    <!-- Modal Window -->
+    <div class="modal fade" id="MyDialog" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLongTitle"></h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <p></p>
+          </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary" data-dismiss="modal">Ok</button>
+            </div>
+          </div>
+        </div>
+    </div> 
+    
+{% endblock %}

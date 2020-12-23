@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Bootstrap -->
+    {% block title %}Main Page{% endblock %}
+</head>
+<body>
+  {% block header %}
+  <script>
+    function test(){
+    $.ajax({
+      method:'POST',
+      url:'/',
+      data:{text:$('#q').val()},
+      success: function (response){
+
+        var json = jQuery.parseJSON(response)
+        $('.search_result').html('')
+
+        for(let art in json){
+          if(art==3){ break }
+          $('.search_result').append(`
+          <div class="card bg-light my-4" style="max-width: 18em;">
+            <div class="card-header my-0"><a href="/article/${json[art].id}">${json[art].title}</a></div>
+            <div class="card-body">
+              <p class="card-text my-0">${json[art].cut}</p>
+            </div>
+          </div>
+          `)
+        }
+        if(json.length > 3){
+          $('.search_result').append(`
+          <a href="/blog?q=${$('#q').val()}">Посмотреть все результаты</a>
+          `)
+        }
+
+
+      },
+      error: function (e){
+        console.log(`Error is ${e}`)
+      }
+
+    })}
+
+    function logout(){
+      $('#MyDialog').modal('show')
+    }
+  </script>
+
+
+
+  <header>
+  <!-- JS Magic -->
+    <div class='my_login nav navbar-dark bg-dark' style="display: block; position: fixed; top: 0;width: 100%; z-index: 100;">
+      <a class='my_close navbar-brand btn btn-second ml-2'>▽</a>
+      {% if current_user.is_authenticated %}
+      <div class="mr-5" style="float:right;">
+        <ul class="nav">
+          <li class="nav-item">
+            <a class="nav-link text-light" href="/article">New Post</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-light" href="/blog/{{ current_user.login }}">My Blog</a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">{{ current_user.login }}</a>
+            <div class="dropdown-menu">
+              <a class="dropdown-item" href="#">Settings</a>
+              <a class="dropdown-item" href="#">Avatars</a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" onclick="logout()">Logout</a>
+            </div>
+          </li>
+        </ul>
+      </div>
+      {% else %}
+      <div class="mr-5" style="float:right;">
+        <ul class="nav">
+          <li class="nav-item">
+            <a class="nav-link text-primary" href="/login">Sign in</a>
+          </li>
+          <li><a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">|</a></li>
+          <li class="nav-item">
+            <a class="nav-link text-primary" href="/registration">Sign up</a>
+          </li>
+        </ul>
+      </div>
+      {% endif %}
+    </div>
+
+
+    <div class="my_blank navbar-light bg-light" style="display: block;">
+      <a class='my_open navbar-brand btn btn-light ml-2'>▷</a>
+    </div>
+    <!-- Bootstrap -->
+  </header>
+  {% endblock %}
+
+
+
+  {% block body %}
+
+
+  <div class="go_flex" style='display: flex;'>
+    <!-- Hot topics-->
+    <div class="main_body ml-4 my-4" style="width: 18em;">
+      <div class="card bg-dark" style="max-width: 18rem;">
+        <div class="card-header mb-0 text-info">Hot topics:</div>
+        <div class="card-body">
+        
+          {% for article in articles %}
+          <div class="card bg-light my-4" style="max-width: 18rem;">
+            <div class="card-header my-0"><a href="/article/{{ article.id }}">{{ article.title }}</a>
+            </div>
+            <div class="card-body">
+              <p class="card-text my-0">{{ article.cut }}</p>
+              <p class="card-text my-0"><small class="text-muted">{{ article.date.date() }}</small></p>
+            </div>
+            {% if article.tags|length != 0 %}
+              <div class="card-footer">
+                {% for tag in article.tags %}
+                  <span class="badge badge-pill badge-dark">{{ tag.name }}</span>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+
+        </div>
+      </div>
+    </div>
+    <!-- Main block -->
+  <div class='m-4' style="min-width: 50em">
+    {% for art in sends %}
+    <div class="card text-center mb-4" style="min-width: 100%;">
+      <div class="card-header">{{ art.owner.login }}</div>
+        <div class="card-body">
+          <h5 class="card-title">{{ art.title }}</h5>
+          <p class="card-text">{{ art.cut }}.</p>
+          <a href="/article/{{ art.id }}" class="btn btn-primary">Читать полностью</a>
+        </div>
+      <div class="card-footer text-muted">{{ art.date.date() }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+
+  
+
+  <!-- Search Area -->
+  <div class='m-4'>
+    <form method="POST">
+      <div class="input-group mb-3" >
+        <input name='search_field' type="text" id='q' 
+        class="form-control" placeholder="Search" 
+        aria-label="Текст статьи" aria-describedby="button-addon2">
+        <div class="input-group-append">
+          <a class="search_button btn btn-outline-secondary" onclick="test()" id="button-addon2">Поиск</a>
+        </div>
+      </div>
+    </form>
+    <div class="search_result card-body" >
+    </div>
+  </div>
+</div>
+
+
+    <!-- Modal Window -->
+    <div class="modal fade" id="MyDialog" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="exampleModalLongTitle">Подождите</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <p>Вы уверены, что хотите выйти из аккаунта?</p>
+        </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Отмена</button>
+            <a type="button" class="btn btn-primary" href='/logout'>Выйти</a>
+          </div>
+        </div>
+      </div>
+    </div> 
+
+<script src="{{ url_for('static', filename='js/actions.js') }}"></script>    
+{% endblock %}
+</body>
+</html>

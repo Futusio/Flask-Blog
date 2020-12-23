@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="{{ url_for('static', filename='bootstrap/css/bootstrap.css') }}"rel="stylesheet">
+    <title>{% block title %}{% endblock %}</title>
+    <script 
+      src="https://code.jquery.com/jquery-3.5.1.js"
+      integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc="
+      crossorigin="anonymous">
+    </script>
+    <script src="=https://unpkg.com/@popperjs/core@2"></script>
+</head>
+
+<body>
+    <!-- Login panel -->
+    {% block header %}
+    {% endblock %}
+    <!-- Header -->
+    <div class="header ">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+          <p class="navbar-brand ml-2">SendNuds</p>
+          <!-- <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button> -->
+          <div class="collapse navbar-collapse justify-content-end mr-5" id="navbarNavDropdown">
+            <ul class="navbar-nav">
+              <li class="nav-item">
+                <a class="nav-link" href="/">Home<span class="sr-only">(current)</span></a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/blog">Blog</a>
+              </li>
+              <!-- <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false">More</a>
+                <div class="dropdown-menu">
+                  <a class="dropdown-item" href="#">Contact us</a>
+                  <a class="dropdown-item" href="#">About us</a>  
+                </div>
+              </li> -->
+            </ul>
+          </div>
+        </nav>
+    </div>
+    <!-- Body -->
+    {% block body %}
+    {% endblock %}
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='bootstrap/js/bootstrap.bundle.js') }}"></script>
+</body>

@@ -1,0 +1,248 @@
+{% extends 'base.html' %}
+
+{% block title %} Registration {% endblock %}
+
+
+{% block body %}
+
+    <script>
+      var isValid = false // Valid all form
+      var isMail = true // Valid mail
+      var isLogin = false // Valid login
+      var isPassword = false // Valid passw
+
+      function validForm() { 
+        console.log(`Result: ${isLogin}, ${isPassword}`)
+        if (isLogin && isMail && isPassword){
+          $('#regButton').removeClass().addClass('btn btn-primary')
+        } else {
+          $('#regButton').removeClass().addClass('btn btn-primary disabled')
+        }
+      }
+
+      // Логин в фокусе
+      $(document).on('keypress','#username', function() {
+        var that = this;
+          setTimeout(function() {
+              var res = /[^a-zA-Z]/g.exec(that.value);
+              console.log(res);
+              that.value = that.value.replace(res, '');
+              var len = document.getElementById('username').value
+              // Проверка длины логина 
+              if (len.length < 6){
+                isLogin = false; validForm();
+                $('#login_help').removeClass().addClass('help-block')
+                $('#login_help').html('Минимум 6 символов')
+                $('#login_help').addClass('text-warning')
+              }
+              else{
+                isLogin = false; validForm();
+                $('#login_help').removeClass().addClass('help-block')
+                $('#login_help').addClass('text-info')
+              }
+          }, 0);
+      });
+      // Потеря фокуса логина
+      $(document).on('focusout', '#username', function() {
+        var len = document.getElementById('username').value
+        if (len.length === 0){ //
+          $('#login_help').removeClass().addClass('help-block')
+          $('#login_help').html('Логин может состоять только из символов английского алфавита')
+        }
+        else if (len.length >= 6){
+          checkLogin(len)
+        }
+      })
+      // Ajax to server
+      function checkLogin(login){
+        $.ajax({
+          type: 'POST',
+          url: '/check_login',
+          data: $('form').serialize(),
+          success: function (response) {
+            var json = jQuery.parseJSON(response)
+            console.log(json)
+            console.log(json.status)
+            if (json == 'success'){
+              isLogin = true; validForm();
+              $('#login_help').removeClass().addClass('help-block')
+              $('#login_help').html('Логин свободен')
+              $('#login_help').addClass('text-success')
+
+            } else {
+              isLogin = false; validForm();
+              $('#login_help').removeClass().addClass('help-block')
+              $('#login_help').addClass('text-danger')
+              $('#login_help').html('Логин занят')
+            }
+          },
+          error: function (e) {
+            console.log(`Error is ${e}`)
+          },
+        })
+      }
+
+      // Password functions:
+      // Password one
+      $(document).on('input', '#password', function () {
+        var password = document.getElementById('password').value
+        console.log(password.length)
+        if (password.length < 8){
+          $('#pass_help').removeClass().addClass('help-block')
+          $('#pass_help').addClass('text-warning')
+          $('#pass_help').html('Не менее 8 символов')
+        } else {
+          $('#pass_help').removeClass().addClass('help-block')
+          $('#pass_help').addClass('text-info')
+        }
+      })
+
+      $(document).on('focusout', '#password', function () {
+        var password = document.getElementById('password').value
+        if (password.length == 0){
+          $('#pass_help').removeClass().addClass('help-block')
+          $('#pass_help').html('Придумайте пароль не менее 8 символов')
+        } else if (password.length >= 8 ){
+          $('#pass_help').removeClass().addClass('help-block')
+          $('#pass_help').addClass('text-success')
+          $('#pass_help').html('Корректный пароль')
+        }
+      })
+
+      // password confirm
+      $(document).on('input', '#password_confirm, #password', function (){
+        var last = document.getElementById('password').value
+        var password = document.getElementById('password_confirm').value
+        if (password.length == 0) {
+          return undefined
+        }
+        if (password != last) {
+          isPassword = false; validForm()
+          $('#conf_help').removeClass().addClass('help-block')
+          $('#conf_help').addClass('text-warning')
+          $('#conf_help').html('Пароли должны совпадать')
+
+        } else {
+          if (password.length >= 8) { isPassword= true; validForm() }
+          $('#conf_help').removeClass().addClass('help-block')
+          $('#conf_help').addClass('text-success')
+          $('#conf_help').html('Пароли совпадают')
+        }
+      })
+
+      $(document).on('focusout', '#password_confirm', function (){
+        var password = document.getElementById('password_confirm').value
+        if (password.length == 0){
+          $('#conf_help').removeClass().addClass('help-block')
+          $('#conf_help').html('Подтвердите пароль')
+        }
+      })
+
+      // Send to server
+      function validate() {
+          $.ajax({
+              type:'POST',
+              url:'/registration',
+              data:$('form').serialize(),
+              type:'POST',
+              success: function (response) {
+                  $('#MyDialog').modal('show')
+                  var json = jQuery.parseJSON(response)
+                  if (json.status === 'success'){
+                    isValid = true 
+                    $('#exampleModalLongTitle').html("Успешно!")
+                    $('.modal-body').html("Ваш аккаунт успешно зарегистрирован!")
+                  } else {    
+                    $('#exampleModalLongTitle').html("Ошибка!")
+                    $('.modal-body').html(json.message)
+                  }
+              },
+              error: function (error) {
+                  console.log(`Error is ${error}`)
+              }
+          });
+      }
+      $(document).on('hidden.bs.modal', '#MyDialog', function() {
+        if(isValid){
+          window.location.href = '/'
+        }
+      })
+    </script>
+
+  <!-- START -->
+  <div class='container p-3 mt-5 border w-25'>
+    <form name='form' class="form-horizontal" method="POST">
+      <fieldset>
+        <div class="control-group" style="margin:0 10% 0 10%;" >
+          <!-- Username -->
+          <label class="control-label"  for="username">Логин:</label>
+          <div class="controls">  
+            <input type="text" autocomplete="off" id="username" name="login"  style="width: 100%">
+            <p class="help-block"><small id='login_help'>Логин может состоять только из символов английского алфавита</small></p>
+          </div>
+        </div>
+     
+
+        <!-- EMAIL -->
+        <!-- <div class="control-group">
+          orig
+          <label class="control-label" for="email">E-mail</label>
+          <div class="controls">
+            <input type="text" id="email" name="email" placeholder="" class="input-xlarge">
+            <p class="help-block">Please provide your E-mail</p>
+          </div>
+        </div> -->
+        <!-- <div class=" container form-group">
+          <label for="exampleInputEmail1">Email address</label>
+          <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp">
+          <small id="emailHelp" class="form-text text-muted">Придумайте пароль не менее 8 символов</small>
+        </div> -->
+     
+        <div class="control-group" style="margin:0 10% 0 10%;">
+          <!-- Password-->
+          <label class="control-label" for="password">Пароль:</label>
+          <div class="controls">
+            <input type="password" id="password" name="password" style="width: 100%">
+            <p class="help-block"><small id='pass_help'>Придумайте пароль не менее 8 символов</small></p>
+          </div>
+        </div>
+     
+        <div class="control-group" style="margin:0 10% 0 10%;">
+          <!-- Password -->
+          <label class="control-label"  for="password_confirm">Пароль:</label>
+          <div class="controls">
+            <input type="password" id="password_confirm" name="password_confirm" style="width: 100%">
+            <p class="help-block"><small id='conf_help'>Подтвердите пароль</small></p>
+          </div>
+        </div>
+     
+        <div class="control-group" style="margin:0 10% 0 10%;">
+          <!-- Button -->
+          <div class="controls">
+            <a class="btn btn-primary disabled" onclick="validate()" style="width: 100%" id='regButton'>Регистрация</a>
+          </div>
+        </div>
+      </fieldset>
+    </form>
+  </div>
+      
+      <!-- Modal Window-->
+      <div class="modal fade" id="MyDialog" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalLongTitle"></h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <p></p>
+          </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary" data-dismiss="modal">Ok</button>
+            </div>
+          </div>
+        </div>
+      </div> 
+{% endblock %}
