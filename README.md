@@ -1,4 +1,4 @@
-# Flask-Blog
+# Flask Blog
 Мое первое Web Application основанное на Flask
 Среди технологий используются:
   Flask + Flask-sqlalchemy
